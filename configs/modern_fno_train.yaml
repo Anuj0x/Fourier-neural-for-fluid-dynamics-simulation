@@ -1,0 +1,79 @@
+# Configuration for modern FNO training
+defaults:
+  - _self_
+
+# Data configuration
+data:
+  data_path: "src/data/datasets/t1-t50VorticityZ-32x32-v1e-3-T50-N40.npy"
+  normalize: true
+
+# Model configuration
+model:
+  # Modern API (recommended)
+  modes: 16  # Fourier modes for spectral convolution
+  width: 64  # Hidden dimension
+  num_layers: 4  # Number of FNO layers
+  activation: "gelu"
+  dropout: 0.0
+
+  # Original API (for compatibility)
+  use_original_api: false
+  in_neurons: 20
+  hidden_neurons: 256
+  out_neurons: 1
+  modes_space: 16
+  modes_time: 16
+
+  # Performance options
+  use_compile: true  # Use torch.compile for speedup
+
+# Training configuration
+training:
+  batch_size: 16
+  max_epochs: 500
+  learning_rate: 1e-3
+
+  # Hardware
+  accelerator: "auto"
+  devices: "auto"
+  strategy: "auto"  # Can be 'ddp', 'deepspeed', etc.
+  precision: "16-mixed"  # bfloat16, 16-mixed, or 32
+
+  # Advanced training
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  patience: 20
+  val_check_interval: 1.0
+  num_sanity_val_steps: 2
+  seed: 42
+
+  # Multi-GPU/data parallel
+  num_workers: 4
+
+# Logging and monitoring
+logging:
+  use_wandb: false
+  wandb_project: "modern-fno"
+  wandb_run_name: "navier-stokes-fno-${model.modes}-${model.width}"
+  save_dir: "./checkpoints"
+  enable_progress_bar: true
+  log_every_n_steps: 10
+
+# Testing (after training)
+testing:
+  test_after_training: true
+
+# Experiment tracking (for sweeps)
+experiment:
+  name: "modern_fno_baseline"
+  tags: ["fno", "navier-stokes", "modern"]
+
+# Hydra settings
+hydra:
+  run:
+    dir: "./outputs/${experiment.name}"
+  sweep:
+    dir: "./outputs/sweeps/${experiment.name}"
+    subdir: "${hydra:job.num}"
+  job:
+    chdir: true
